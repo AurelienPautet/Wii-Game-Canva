@@ -142,6 +142,10 @@ class CollisonsBox {
 class Player {
   constructor(position, body, turret) {
     this.position = position;
+    this.spawnpos = {
+      x: 0,
+      y: 0,
+    };
     this.velocity = {
       x: 0,
       y: 0,
@@ -172,7 +176,9 @@ class Player {
       y: 0,
     };
   }
-
+  spawn() {
+    this.position = structuredClone(this.spawnpos);
+  }
   shoot() {
     if (this.bulletcount < 5) {
       this.bulletcount++;
@@ -235,7 +241,7 @@ class Player {
     //change the angle of the image depending on the mvt direction
     this.velocity = this.direction;
     for (let i = 0; i < Bcollision.length; i++) {
-      this.collision(Bcollision[i]);
+      this.BodyCollision(Bcollision[i]);
     }
     if (this.velocity.x == mvtspeed) {
       this.rotation = 0;
@@ -271,7 +277,19 @@ class Player {
       this.angle = (angle * 180) / Math.PI + 180;
     }
   }
-  collision(obj) {
+  BulletCollision(obj) {
+    return (this.side = rectRect(
+      this.position.y,
+      this.position.x,
+      this.size.w,
+      this.size.h,
+      obj.position.y,
+      obj.position.x,
+      obj.size.w,
+      obj.size.h
+    ));
+  }
+  BodyCollision(obj) {
     this.side = colliderect(
       this.position.y,
       this.position.x,
@@ -333,13 +351,13 @@ let MouseY = 0;
 
 const player = new Player(
   {
-    x: 110,
-    y: 110,
+    x: 0,
+    y: 0,
   },
   body,
   turret
 );
-
+players = [player];
 blocks = [];
 Bcollision = [];
 bullets = [];
@@ -347,8 +365,8 @@ mines = [];
 
 loadlevel("levels/level1.json");
 
-//debug = "rgba(255, 0, 0, 0.2)";
-debug = "rgba(255, 0, 0, 0)";
+debug = "rgba(255, 0, 0, 0.2)";
+//debug = "rgba(255, 0, 0, 0)";
 
 function animate() {
   window.requestAnimationFrame(animate);
@@ -359,6 +377,16 @@ function animate() {
       bullets[i].emitter.bulletcount--;
       bullets.splice(i, 1);
       i -= 1;
+      continue;
+    }
+    for (let e = 0; e < players.length; e++) {
+      if (players[e].BulletCollision(bullets[i])) {
+        console.log("touh");
+        bullets[i].emitter.bulletcount--;
+        bullets.splice(i, 1);
+        i -= 1;
+        players[e].spawn();
+      }
     }
   }
   for (let i = 0; i < mines.length; i++) {
@@ -375,6 +403,9 @@ function animate() {
   //for (let i = 0; i < Bcollision.length; i++) {
   //  Bcollision[i].draw();
   //}
+  for (let i = 0; i < players.length; i++) {
+    players[i].update();
+  }
   player.update();
   c.fillStyle = debug;
   c.fillRect(MouseX, MouseY, 10, 10);
@@ -409,6 +440,10 @@ window.addEventListener("keydown", (event) => {
       break;
     case " ":
       player.plant();
+      break;
+    case "r":
+      player.spawn();
+      console.log("respawned");
       break;
   }
 });
@@ -493,8 +528,9 @@ function loadlevel(name) {
         blocks.push(new Block({ x: c * 50, y: l * 50 }, block2));
       }
       if (blocklist[l * 23 + c] == 3) {
-        player.position.x = c * 50;
-        player.position.y = l * 50;
+        player.spawnpos.x = c * 50;
+        player.spawnpos.y = l * 50;
+        player.spawn();
       }
     }
   }
@@ -614,6 +650,21 @@ function loadlevel(name) {
       }
     }
   }
+}
+
+function rectRect(r1x, r1y, r1w, r1h, r2x, r2y, r2w, r2h) {
+  // are the sides of one rectangle touching the other?
+
+  if (
+    r1x + r1w >= r2x && // r1 right edge past r2 left
+    r1x <= r2x + r2w && // r1 left edge past r2 right
+    r1y + r1h >= r2y && // r1 top edge past r2 bottom
+    r1y <= r2y + r2h
+  ) {
+    // r1 bottom edge past r2 top
+    return true;
+  }
+  return false;
 }
 
 function colliderect(
