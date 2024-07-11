@@ -167,6 +167,10 @@ class Player {
     };
     this.bulletcount = 0;
     this.minecount = 0;
+    this.aim = {
+      x: 0,
+      y: 0,
+    };
   }
 
   shoot() {
@@ -225,6 +229,7 @@ class Player {
   }
 
   update() {
+    this.CalculateAngle();
     this.draw();
 
     //change the angle of the image depending on the mvt direction
@@ -255,7 +260,17 @@ class Player {
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
   }
-
+  CalculateAngle() {
+    let adjacent = this.aim.x - (this.position.x + this.size.w / 2);
+    let opposite = this.aim.y - (this.position.y + this.size.h / 2);
+    let angle = Math.atan(opposite / adjacent);
+    console.log();
+    if (adjacent < 0) {
+      this.angle = (angle * 180) / Math.PI;
+    } else {
+      this.angle = (angle * 180) / Math.PI + 180;
+    }
+  }
   collision(obj) {
     this.side = colliderect(
       this.position.y,
@@ -357,11 +372,10 @@ function animate() {
   for (let i = 0; i < blocks.length; i++) {
     blocks[i].draw();
   }
-  for (let i = 0; i < Bcollision.length; i++) {
-    Bcollision[i].draw();
-  }
+  //for (let i = 0; i < Bcollision.length; i++) {
+  //  Bcollision[i].draw();
+  //}
   player.update();
-  CalculateAngle();
   c.fillStyle = debug;
   c.fillRect(MouseX, MouseY, 10, 10);
 }
@@ -372,18 +386,8 @@ onmousemove = function (e) {
   var rect = canvas.getBoundingClientRect();
   MouseX = e.clientX - rect.left;
   MouseY = e.clientY - rect.top;
+  player.aim = { x: MouseX, y: MouseY };
 };
-function CalculateAngle() {
-  adjacent = MouseX - (player.position.x + player.size.w / 2);
-  opposite = MouseY - (player.position.y + player.size.h / 2);
-  angle = Math.atan(opposite / adjacent);
-  console.log();
-  if (adjacent < 0) {
-    player.angle = (angle * 180) / Math.PI;
-  } else {
-    player.angle = (angle * 180) / Math.PI + 180;
-  }
-}
 
 window.addEventListener("click", (event) => {
   player.shoot();
